@@ -1,0 +1,22 @@
+[build-system]
+requires = ["uv_build>=0.9.15"]
+build-backend = "uv_build"
+
+[project]
+name = "tabpi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gymnasium[classic-control]>=1.2.3",
+    "huggingface>=0.0.1",
+    "il-datasets>=0.6.1",
+    "rich>=14.2.0",
+    "scikit-learn>=1.7.2",
+    "tabpfn>=6.2.0",
+    "torch>=2.9.1",
+    "torchvision>=0.24.1",
+    "tqdm>=4.67.1",
+    "tyro>=1.0.3",
+]
