@@ -74,7 +74,7 @@ def main():
     rewards = []
     frames = []
 
-    for i in tqdm(range(1)):
+    for i in tqdm(range(10)):
         # while not done:
         for _ in tqdm(range(500)):
             frame = env.render()
@@ -102,7 +102,7 @@ def main():
     env.close()
     print("Average total reward over 10 episodes:", np.mean(totals))
     imageio.mimsave('cartpole.mp4', frames, fps=50)
-    print("1 episode saved to video cartpole.mp4")
+    print("Episode(s) saved to video cartpole.mp4")
 
 if __name__ == "__main__":
     main()
