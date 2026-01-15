@@ -16,6 +16,7 @@ from tabpfn.constants import ModelVersion
 
 
 from gymnasium import Env
+import imageio
 
 
 import gymnasium as gym
@@ -65,16 +66,20 @@ def main():
     #
 
     policy = lambda obs: regressor.predict(obs.reshape(1, -1))[0]
-    env = gym.make("CartPole-v1", render_mode="human")  # drop render_mode if headless
+    env = gym.make("CartPole-v1", render_mode="rgb_array")  # drop render_mode if headless
     obs, info = env.reset(seed=0)
 
     done = False
     totals = []
     rewards = []
+    frames = []
 
     for i in tqdm(range(10)):
         # while not done:
         for _ in tqdm(range(500)):
+            frame = env.render()
+            frames.append(frame)
+
             # --- call your policy ---
             action = policy(obs)          # must be 0 or 1
             print("predicted action:", action)
@@ -96,6 +101,8 @@ def main():
 
     env.close()
     print("Average total reward over 10 episodes:", np.mean(totals))
+    imageio.mimsave('cartpole.mp4', frames, fps=50)
+    print("Episode(s) saved to video cartpole.mp4")
 
 if __name__ == "__main__":
     main()
