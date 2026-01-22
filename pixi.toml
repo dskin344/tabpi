@@ -1,0 +1,17 @@
+[workspace]
+authors = ["matt <mhyatt000@gmail.com>"]
+channels = ["conda-forge"]
+name = "tabpi"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[activation.env]
+MUJOCO_GL = "osmesa"
+
+[tasks]
+
+[tasks.libero]
+cmd = "uv run liberoRandom.py"
+depends-on = []
+
+[dependencies]

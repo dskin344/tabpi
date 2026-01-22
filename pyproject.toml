@@ -9,12 +9,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "gym>=0.26.2",
     "gymnasium[classic-control]>=1.2.3",
     "huggingface>=0.0.1",
     "il-datasets>=0.6.1",
     "imageio>=2.37.2",
     "imageio-ffmpeg>=0.6.0",
+    "libero>=0.1.1",
+    "numpy==2.3.5",
     "rich>=14.2.0",
+    "robosuite>=1.4.0",
     "scikit-learn>=1.7.2",
     "tabpfn>=6.2.0",
     "torch>=2.9.1",
