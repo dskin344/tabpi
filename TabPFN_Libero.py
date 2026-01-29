@@ -12,6 +12,7 @@ from libero.libero.envs import OffScreenRenderEnv
 from libero.libero.utils.download_utils import check_libero_dataset
 import numpy as np
 from rich import print
+from sklearn.metrics import mean_squared_error, r2_score
 from tabpfn import TabPFNRegressor
 import tyro
 
@@ -55,6 +56,23 @@ def extract(task_suite, task_id):
     return states, actions
 
 
+class MyMultiTPFN:
+    def __init__(self, dim: int, **kwargs):
+        self.dim = dim
+        self.models = [TabPFNRegressor(**kwargs) for _ in range(dim)]
+
+    def fit(self, x: np.ndarray, y: np.ndarray):
+        for i in range(self.dim):
+            self.models[i].fit(x, y[:, i])  # Train on dimension i
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        predictions = []
+        for i in range(self.dim):
+            pred = self.models[i].predict(x)
+            predictions.append(pred)
+        return np.column_stack(predictions)
+
+
 @dataclass
 class Config:
     task: str | None = None
@@ -86,24 +104,38 @@ def main(cfg: Config):
 
     n_fit = int(features.shape[0] * 0.80)
     n_test = features.shape[0] - n_fit
-    x_fit, x_test = features[:n_train], features[n_train:]
-    y_fit, y_test = actions[:n_train], actions[n_train:]
+    x_fit, x_test = features[:n_fit], features[n_fit:]
+    y_fit, y_test = actions[:n_fit], actions[n_fit:]
 
     """regressor = TabPFNRegressor()
     regressor.fit(x_train, y_train)
     prediction_policy = regressor.predict(x_test)"""
 
+    policy = MyMultiTPFN(dim=7)
+    # fit the policy
+    policy.fit(x_fit, y_fit)
+    # predict the policy
+    yh = policy.predict(x_test)
+
+    # import mse metric from tabpfn.metrics
+    # Evaluate the model
+    mse = mean_squared_error(y_test, yh)
+    r2 = r2_score(y_test, yh)
+
+    print("Mean Squared Error (MSE):", mse)
+    print("R² Score:", r2)
+
+    """
     prediction_policy = []
     for i in range(7):
         regressor = TabPFNRegressor()
         regressor.fit(x_fit, y_fit[:, i])  # Train on dimension i
         pred = regressor.predict(x_test)
         prediction_policy.append(pred)
+    """
 
     # Combine into (69, 7) shape
-    action_policy = np.column_stack(prediction_policy)
-
-    quit()
+    # action_policy = np.column_stack(prediction_policy)
 
     task = task_suite.get_task(task_id)
     bddl_file_path = task_suite.get_task_bddl_file_path(task_id)
@@ -119,11 +151,15 @@ def main(cfg: Config):
 
     # Create environment
     env = OffScreenRenderEnv(**env_args)
+    thing = env.reset()
+    print(spec(thing))
 
     frames = []
-    done, step = False, 0
+    done, step, max_steps = False, 0, 500
     while not done and step < max_steps:
-        action = action_policy[step]
+        # action = action_policy[step]
+        print(spec(obs))
+        action = policy.predict(obs.reshape(1, -1))
         obs, reward, done, _info = env.step(action)
 
         frames.append(obs["galleryview_image"][::-1])
