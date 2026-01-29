@@ -1,35 +1,66 @@
 from __future__ import annotations
 
-import os
+from dataclasses import dataclass
+from pathlib import Path
 
 import h5py
 import imageio
+import jax
+import libero
 from libero.libero import benchmark
 from libero.libero.envs import OffScreenRenderEnv
 from libero.libero.utils.download_utils import check_libero_dataset
 import numpy as np
+from rich import print
 from tabpfn import TabPFNRegressor
+import tyro
+
+suites = Path(libero.__file__).parents[0] / "datasets"
+
+
+def h5_to_tree(path: str):
+    def read_node(node):
+        if isinstance(node, h5py.Dataset):
+            return np.asarray(node)
+        if isinstance(node, h5py.Group):
+            return {k: read_node(node[k]) for k in node}
+        raise TypeError(type(node))
+
+    with h5py.File(path, "r") as f:
+        return read_node(f)
+
+
+def spec(x: dict):
+    return jax.tree.map(lambda y: y.shape, x)
 
 
 def extract(task_suite, task_id):
-    demo_path = task_suite.get_task_demonstration(task_id)
-    full_path = os.path.join("/home/dskinner2/repo/tabpi/.venv/lib/python3.13/site-packages/libero/datasets", demo_path)
+    suite: str = task_suite.get_task_demonstration(task_id)
+    full_path: Path = suites / suite
 
-    with h5py.File(full_path, "r") as f:
-        # Only using demo 0 for task_id
-        demo = f["data"]["demo_0"]
-        print(task_suite.get_task(task_id).name)
+    tree = h5_to_tree(full_path)
+    # optional: post-process (example: cast all float64 -> float32)
+    # tree = jtu.tree_map(lambda x: x.astype(np.float32) if x.dtype == np.float64 else x, tree)
+    demos = tree["data"]
+    d0 = tree["data"]["demo_0"]
+    # print(spec(demos))
 
-        # Extract all the state-based features (not im
-        features = np.array(demo["states"])  # (329, 47)
+    sa_by_demo = {k: (d["states"], d["actions"]) for k, d in demos.items()}
+    keys = sorted(sa_by_demo.keys())
 
-        # Get targets (example: predict next action)
-        actions = np.array(demo["actions"])  # (329, 7)
+    states = np.concatenate([sa_by_demo[k][0] for k in keys], axis=0)
+    actions = np.concatenate([sa_by_demo[k][1] for k in keys], axis=0)
 
-        return features, actions
+    # states, actions = d0['states'], d0['actions']
+    return states, actions
 
 
-def main():
+@dataclass
+class Config:
+    task: str | None = None
+
+
+def main(cfg: Config):
     task_suite_name = "libero_spatial"
     task_id = 0
 
@@ -39,13 +70,14 @@ def main():
 
     if not check_libero_dataset():
         print("Datasets not found")
-        # libero_dataset_download(datasets="libero_100", use_huggingface=True)
+        # libero_dataset_download(datasets="all", use_huggingface=True)
     else:
         print("Datasets found, no need to download")
 
     features, actions = extract(task_suite, task_id)
     print(features.shape)
     print(actions.shape)
+    quit()
 
     # Fit the model here
     n_train = int(features.shape[0] * 0.80)
@@ -106,4 +138,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(tyro.cli(Config))
