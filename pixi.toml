@@ -11,7 +11,7 @@ MUJOCO_GL = "osmesa"
 [tasks]
 
 [tasks.libero]
-cmd = "uv run liberoRandom.py"
+cmd = "uv run TabPFN_Libero.py"
 depends-on = []
 
 [dependencies]

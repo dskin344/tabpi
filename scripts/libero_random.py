@@ -1,7 +1,4 @@
-import os
-import numpy as np
 import imageio
-import time
 import libero.libero.envs
 
 from libero.libero import benchmark, get_libero_path
@@ -14,9 +11,8 @@ def main():
     task_names = task_suite.get_task_names()
     frames = []
     max_steps = 300
-    num_of_tasks = task_suite.get_num_tasks()
 
-    for t in range(1):
+    for t in range(num_tasks):
 
         task = task_suite.get_task(t)
         bddl_file_path = task_suite.get_task_bddl_file_path(t)
@@ -36,7 +32,7 @@ def main():
 
 
         done, step = False, 0
-        while !done and step < max_steps:
+        while not done and step < max_steps:
             step += 1
                        
             action = np.random.uniform(-1, 1, 7)
