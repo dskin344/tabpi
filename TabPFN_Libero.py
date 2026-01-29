@@ -77,13 +77,17 @@ def main(cfg: Config):
     features, actions = extract(task_suite, task_id)
     print(features.shape)
     print(actions.shape)
-    quit()
 
     # Fit the model here
-    n_train = int(features.shape[0] * 0.80)
-    max_steps = features.shape[0] - n_train
-    x_train, x_test = features[:n_train], features[n_train:]
-    y_train, y_test = actions[:n_train], actions[n_train:]
+    indices = np.arange(features.shape[0])
+    np.random.shuffle(indices)
+    features = features[indices]
+    actions = actions[indices]
+
+    n_fit = int(features.shape[0] * 0.80)
+    n_test = features.shape[0] - n_fit
+    x_fit, x_test = features[:n_train], features[n_train:]
+    y_fit, y_test = actions[:n_train], actions[n_train:]
 
     """regressor = TabPFNRegressor()
     regressor.fit(x_train, y_train)
@@ -92,12 +96,14 @@ def main(cfg: Config):
     prediction_policy = []
     for i in range(7):
         regressor = TabPFNRegressor()
-        regressor.fit(x_train, y_train[:, i])  # Train on dimension i
+        regressor.fit(x_fit, y_fit[:, i])  # Train on dimension i
         pred = regressor.predict(x_test)
         prediction_policy.append(pred)
 
     # Combine into (69, 7) shape
     action_policy = np.column_stack(prediction_policy)
+
+    quit()
 
     task = task_suite.get_task(task_id)
     bddl_file_path = task_suite.get_task_bddl_file_path(task_id)
