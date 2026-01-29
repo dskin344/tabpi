@@ -1,7 +1,7 @@
-import imageio
-import libero.libero.envs
+from __future__ import annotations
 
-from libero.libero import benchmark, get_libero_path
+import imageio
+from libero.libero import benchmark
 from libero.libero.envs import OffScreenRenderEnv
 
 
@@ -13,32 +13,29 @@ def main():
     max_steps = 300
 
     for t in range(num_tasks):
-
         task = task_suite.get_task(t)
         bddl_file_path = task_suite.get_task_bddl_file_path(t)
         print(f"Using task: {task_names[t]}")
- 
-      
-        # Create environment arguments dictionary  
-        env_args = {  
-            "bddl_file_name": bddl_file_path,  
+
+        # Create environment arguments dictionary
+        env_args = {
+            "bddl_file_name": bddl_file_path,
             "camera_heights": 720,  # HD resolution
             "camera_widths": 1280,
-            "camera_names": "galleryview"
-        }  
-      
-        # Create environment  
-        env = OffScreenRenderEnv(**env_args)
+            "camera_names": "galleryview",
+        }
 
+        # Create environment
+        env = OffScreenRenderEnv(**env_args)
 
         done, step = False, 0
         while not done and step < max_steps:
             step += 1
-                       
-            action = np.random.uniform(-1, 1, 7)
-            obs, reward, done, info = env.step(action)
 
-            frames.append(obs['galleryview_image'][::-1])
+            action = np.random.uniform(-1, 1, 7)
+            obs, reward, done, _info = env.step(action)
+
+            frames.append(obs["galleryview_image"][::-1])
 
             if step % 10 == 0:
                 print(f"step={step}, reward={reward}")
@@ -50,10 +47,9 @@ def main():
     env.close()
 
     # Save video
-    imageio.mimsave('LiberoRandom.mp4', frames, fps=5)
+    imageio.mimsave("LiberoRandom.mp4", frames, fps=5)
     print("LiberoRandom.mp4 saved")
 
 
 if __name__ == "__main__":
     main()
-

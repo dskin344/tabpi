@@ -1,10 +1,7 @@
-from imitation_datasets.dataset import BaselineDataset
-
-
+from __future__ import annotations
 
 
 def main():
-
-    ds = BaselineDataset(f"NathanGavenski/CartPole-v1", source="huggingface", n_episodes=100)
-    i:wq
-
+    pass
+    # ds = BaselineDataset("NathanGavenski/CartPole-v1", source="huggingface", n_episodes=100)
+    # i: wq
