@@ -1,0 +1,66 @@
+_wandb:
+    value:
+        cli_version: 0.24.0
+        e:
+            hw2bcpow3mb2n59na076v1svcsb48b7u:
+                codePath: TabPFN_Libero.py
+                codePathLocal: TabPFN_Libero.py
+                cpu_count: 56
+                cpu_count_logical: 112
+                cudaVersion: "12.8"
+                disk:
+                    /:
+                        total: "2009044758528"
+                        used: "1602038767616"
+                email: dskinner2@luc.edu
+                executable: /home/dskinner2/repo/tabpi/.venv/bin/python3
+                git:
+                    commit: 4af34ab4f6b3a34804b15482890be37bef937961
+                    remote: https://github.com/dskin344/tabpi.git
+                gpu: Quadro RTX 8000
+                gpu_count: 2
+                gpu_nvidia:
+                    - architecture: Turing
+                      cudaCores: 4608
+                      memoryTotal: "51539607552"
+                      name: Quadro RTX 8000
+                      uuid: GPU-5b47ea45-fff4-f214-b91f-9a8d6d052064
+                    - architecture: Turing
+                      cudaCores: 4608
+                      memoryTotal: "51539607552"
+                      name: Quadro RTX 8000
+                      uuid: GPU-f086a1ee-4a51-6b87-f822-d348bfd99b39
+                host: aisec102
+                memory:
+                    total: "540638109696"
+                os: Linux-6.8.0-90-generic-x86_64-with-glibc2.35
+                program: /home/dskinner2/repo/tabpi/TabPFN_Libero.py
+                python: CPython 3.13.11
+                root: /home/dskinner2/repo/tabpi
+                startedAt: "2026-02-05T07:00:37.536989Z"
+                writerId: hw2bcpow3mb2n59na076v1svcsb48b7u
+        m: []
+        python_version: 3.13.11
+        t:
+            "1":
+                - 1
+                - 5
+                - 12
+                - 49
+                - 53
+            "2":
+                - 1
+                - 5
+                - 12
+                - 49
+                - 53
+            "3":
+                - 2
+                - 13
+                - 16
+            "4": 3.13.11
+            "5": 0.24.0
+            "12": 0.24.0
+            "13": linux-x86_64
+steps:
+    value: 50

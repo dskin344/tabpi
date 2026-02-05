@@ -18,6 +18,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 from tabpfn import TabPFNRegressor
 import tyro
 
+import wandb
+
 suites = Path(libero.__file__).parents[0] / "datasets"
 
 
@@ -91,8 +93,8 @@ class MyMultiTPFN:
 class Config:
     suite: str = "libero_spatial"
     task_id: int = 0
-    training: float = 0.05
-    steps: int = 500
+    training: float = 0.10
+    steps: int = 50
 
 
 def main(cfg: Config):
@@ -114,19 +116,6 @@ def main(cfg: Config):
     features = features[indices]
     actions = actions[indices]
 
-    n_fit = int(features.shape[0] * cfg.training)
-    x_fit, x_test = features[:n_fit], features[n_fit:]
-    y_fit, y_test = actions[:n_fit], actions[n_fit:]
-
-    policy = MyMultiTPFN(dim=7)
-    policy.fit(x_fit, y_fit)
-    yh = policy.predict(x_test)
-
-    mse = mean_squared_error(y_test, yh)
-    r2 = r2_score(y_test, yh)
-    print("Mean Squared Error (MSE):", mse)
-    print("R² Score:", r2)
-
     task = task_suite.get_task(task_id)
     bddl_file_path = task_suite.get_task_bddl_file_path(task_id)
     print(f"Using task: {task_names[task_id]}")
@@ -139,55 +128,82 @@ def main(cfg: Config):
         "camera_names": "galleryview",
     }
 
-    # Create environment
-    env = OffScreenRenderEnv(**env_args)
-    env.reset()
+    wandb.init(project="Libero", name=f"{task_names[task_id]}", config={"steps": cfg.steps})
 
-    frames = []
-    total_time = 0
-    done, step, max_steps = False, 0, cfg.steps
+    training_iter = [0.10, 0.20]  # , 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1]
 
-    dir_path = Path(f"ObsVids/{cfg.training}{task_names[task_id]}")
-    dir_path.mkdir(exist_ok=False)
+    for training in training_iter:
+        n_fit = int(features.shape[0] * training)
+        x_fit, x_test = features[:n_fit], features[n_fit:]
+        y_fit, y_test = actions[:n_fit], actions[n_fit:]
 
-    while not done and step < max_steps:
-        env_state = env.get_sim_state()
+        policy = MyMultiTPFN(dim=7)
+        policy.fit(x_fit, y_fit)
+        yh = policy.predict(x_test)
 
-        # print(f"Env State Shape: {env_state.shape}")
-        start = time.time()
-        action = policy.predict(env_state.reshape(1, -1))
-        end = time.time()
-        action = np.concatenate(action, axis=0)
-        # print(action.shape)
+        mse = mean_squared_error(y_test, yh)
+        r2 = r2_score(y_test, yh)
+        print("Mean Squared Error (MSE):", mse)
+        print("R² Score:", r2)
 
-        iteration_time = start - end
-        total_time += iteration_time
-        obs, _reward, done, _info = env.step(action)
+        # Create environment
+        env = OffScreenRenderEnv(**env_args)
+        env.reset()
 
-        frames.append(obs["galleryview_image"][::-1])
+        frames = []
+        total_time = 0
+        done, step, max_steps = False, 0, cfg.steps
 
-        print(f"step={step}")
-        print(f"Inference time={iteration_time}")
+        vid_path = f"ObsVids/{int(cfg.training * 100)}%{task_names[task_id]}"
+        dir_path = Path(vid_path)
+        dir_path.mkdir(exist_ok=False)
 
-        if done:
-            print("Resetting the env")
-            env.reset()
+        while not done and step < max_steps:
+            step += 1
+            env_state = env.get_sim_state()
 
-        step += 1
+            start = time.time()
+            action = policy.predict(env_state.reshape(1, -1))
+            end = time.time()
+            action = np.concatenate(action, axis=0)
 
-        if step % 10 == 0:
-            imageio.mimsave(f"ObsVids/{cfg.training}{task_names[task_id]}/Step{step}.mp4", frames, fps=5)
-            avg_time = iteration_time / (step + 1)
-            print(f"Average Inference Time={avg_time}")
-            print(f"{cfg.training}{task_names[task_id]} Step{step}.mp4 saved")
+            iteration_time = end - start
+            total_time += iteration_time
+            obs, _reward, done, _info = env.step(action)
 
-        step += 1
+            frames.append(obs["galleryview_image"][::-1])
 
-    env.close()
+            print(f"step={step}")
+            print(f"Inference time={iteration_time}")
 
-    # Save video
-    imageio.mimsave(f"ObsVids/{cfg.training}{task_names[task_id]}/All.mp4", frames, fps=5)
-    print(f"ObsVids/{cfg.training}{task_names[task_id]}/All.mp4 saved")
+            if done:
+                print("Task completed successfully")
+                env.reset()
+
+            """if step % 10 == 0:
+                imageio.mimsave(vid_path, frames, fps=10)
+                print(f"{vid_path}/Step{step}.mp4 saved")"""
+
+        avg_time = total_time / step
+        env.close()
+
+        # Save video
+        imageio.mimsave(f"{vid_path}/All.mp4", frames, fps=10)
+        print(f"{vid_path}/All.mp4 saved")
+
+        wandb.log(
+            {
+                "Training": training,
+                "MSE": mse,
+                "R^2": r2,
+                "Average Inference Time": avg_time,
+                "Steps": step,
+                f"sim/video_{cfg.training * 100}%": wandb.Video(f"{vid_path}/All.mp4", format="mp4"),
+            },
+            step=training,
+        )
+
+        wandb.finish()
 
 
 if __name__ == "__main__":
