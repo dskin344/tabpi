@@ -10,14 +10,8 @@ from sklearn.datasets import fetch_openml
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
-from tabpfn import TabPFNRegressor
-from tabpfn.constants import ModelVersion
-
-
-
 from gymnasium import Env
 import imageio
-
 
 import gymnasium as gym
 import numpy as np
