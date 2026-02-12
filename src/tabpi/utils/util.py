@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import os
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -83,8 +83,10 @@ class LiberoFactory(EnvFactory):
     suite: str = "libero_object"  # used to select group of envs
     id: int = 0
     max_steps: int | None = None  # TODO fix
+    n_envs: int = 1
 
-    task: str = field(init=False)  # used to search for dataset name
+    # TODO why does field resolve to tyro subcommand ?
+    # task: str = field(init=False)  # used to search for dataset name
 
     def __post_init__(self):
         bench = self.get_benchmark(self.suite)
@@ -107,6 +109,11 @@ class LiberoFactory(EnvFactory):
             "camera_names": "galleryview",
             # TODO max steps ...
         }
+
+        if self.n_envs > 1:  # VecEnv
+            raise NotImplementedError("VecEnv not implemented yet")
+            # venv = VecEnv([lambda: OffScreenRenderEnv(**env_args) for _ in range(self.n_envs)])
+            # return venv
 
         env = OffScreenRenderEnv(**env_args)
         return env

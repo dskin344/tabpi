@@ -35,6 +35,7 @@ def main(cfg: Config):
     raw: dict[str, Any] = cfg.env.load_data(data_dir)
     features, actions = extract(raw)
     env = cfg.env.build()
+    _ = env.reset()
 
     print(features.shape)
     print(actions.shape)
@@ -102,6 +103,9 @@ def main(cfg: Config):
         if done:
             print("Task completed successfully")
             break
+
+        # sucesses = rewards.sum(axis=-1) # did any step have success?
+        # sr = successes.mean()
 
     avg_time = total_time / steps
     env.close()
