@@ -10,6 +10,21 @@ MUJOCO_GL = "osmesa"
 
 [tasks]
 
+[tasks.test]
+cmd = "uv run pytest -vvrs"
+
+[tasks.cc]
+cmd = "uvx radon cc . --show-complexity"
+description = "Run cyclomatic complexity check with radon"
+
+[tasks.cc-strict]
+cmd = "uvx radon cc . --show-complexity --min B"
+description = "Run cyclomatic complexity check (strict, min B)"
+
+[tasks.ruff-cyclo]
+cmd = "uvx ruff check . --select C901"
+description = "Check for functions with cyclomatic complexity > 10"
+
 [tasks.libero]
 cmd = "uv run TabPFN_Libero.py"
 depends-on = []
