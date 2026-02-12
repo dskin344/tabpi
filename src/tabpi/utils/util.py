@@ -8,6 +8,7 @@ from typing import Any, TypeAlias
 import h5py
 from libero.libero import benchmark
 from libero.libero.envs import OffScreenRenderEnv
+from libero.libero.envs.venv import SubprocVectorEnv
 import numpy as np
 from tabpfn import TabPFNRegressor
 
@@ -82,8 +83,9 @@ class EnvFactory:
 class LiberoFactory(EnvFactory):
     suite: str = "libero_object"  # used to select group of envs
     id: int = 0
-    max_steps: int | None = None  # TODO fix
-    n_envs: int = 1
+    max_steps: int = 400
+    n_envs: int = 4
+    vectorized: bool = True  # you can set this to False to test non-vectorized envs
 
     # TODO why does field resolve to tyro subcommand ?
     # task: str = field(init=False)  # used to search for dataset name
@@ -110,10 +112,9 @@ class LiberoFactory(EnvFactory):
             # TODO max steps ...
         }
 
-        if self.n_envs > 1:  # VecEnv
-            raise NotImplementedError("VecEnv not implemented yet")
-            # venv = VecEnv([lambda: OffScreenRenderEnv(**env_args) for _ in range(self.n_envs)])
-            # return venv
+        if self.vectorized:
+            env_fns = [lambda: OffScreenRenderEnv(**env_args) for _ in range(self.n_envs)]
+            return SubprocVectorEnv(env_fns)
 
         env = OffScreenRenderEnv(**env_args)
         return env
