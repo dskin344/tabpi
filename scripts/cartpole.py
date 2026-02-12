@@ -50,10 +50,6 @@ def main():
     print("Mean Squared Error (MSE):", mse)
     print("R² Score:", r2)
 
-    #
-    #
-    #
-
     policy = lambda obs: regressor.predict(obs.reshape(1, -1))[0]
     env = gym.make("CartPole-v1", render_mode="rgb_array")  # drop render_mode if headless
     obs, _info = env.reset(seed=0)
