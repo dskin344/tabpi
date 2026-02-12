@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import time
 
 import imageio
+import libero
 import numpy as np
 from rich import print
 from sklearn.metrics import mean_squared_error, r2_score
