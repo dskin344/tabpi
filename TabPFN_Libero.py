@@ -22,7 +22,7 @@ class Config:
     training: float
 
     task_id: int = 0
-    steps: int = 1000
+    steps: int = 400
 
 
 def main(cfg: Config):
