@@ -9,9 +9,9 @@ import numpy as np
 from rich import print
 from sklearn.metrics import mean_squared_error, r2_score
 import tyro
-
-from utils.util import *
 import wandb
+
+from tabpi.utils.util import check_download, extract, MyLibero, MyMultiTPFN
 
 suites = Path(libero.__file__).parents[0] / "datasets"
 
