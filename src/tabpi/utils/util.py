@@ -35,11 +35,7 @@ def h5_to_tree(path: str):
         return read_node(f)
 
 
-def extract(suites, task_suite, task_id):
-    suite: str = task_suite.get_task_demonstration(task_id)
-    full_path: Path = suites / suite
-
-    tree = h5_to_tree(full_path)
+def extract(tree: dict) -> tuple[np.ndarray, np.ndarray]:
     demos = tree["data"]
 
     sa_by_demo = {k: (d["states"], d["actions"]) for k, d in demos.items()}
@@ -72,31 +68,54 @@ class MyMultiTPFN:
         return np.column_stack(predictions)
 
 
-class MyLibero:
-    def __init__(self, task_suite_name: str, task_id: int):
-        self.task_suite = benchmark.get_benchmark(task_suite_name)()
-        self.task_id = task_id
-        self.current_task = None
-        self.env = None
+Env: TypeAlias = Any
 
-    def get_task_suite(self):
-        return self.task_suite
 
-    def get_env(self):
-        return self.env
+@dataclass
+class EnvFactory:
+    pass
 
-    def build_env(self):
-        self.current_task = self.task_suite.get_task(self.task_id)
-        bddl_file_path = self.task_suite.get_task_bddl_file_path(self.task_id)
 
-        print(f"Using task: {self.current_task.name}")
+@dataclass
+class LiberoFactory(EnvFactory):
+    suite: str  # used to select group of envs
+    id: int
+    max_steps: int | None = None  # TODO fix
+
+    task: str = field(init=False)  # used to search for dataset name
+
+    def __post_init__(self):
+        bench = self.get_benchmark(self.suite)
+        self.task = bench.get_task(self.id)
+
+    def get_benchmark(suite: str) -> benchmark.Benchmark:
+        return benchmark.get_benchmark(self.suite)
+
+    def build(self) -> Env:
+        bench = self.get_benchmark(self.suite)
+
+        bddl_file_path: Path = bench.get_task_bddl_file_path(self.id)
+
+        print(f"Using task: {self.task.name}")
 
         env_args = {
             "bddl_file_name": bddl_file_path,
             "camera_heights": 720,  # HD resolution
             "camera_widths": 1280,
             "camera_names": "galleryview",
+            # TODO max steps ...
         }
 
-        self.env = OffScreenRenderEnv(**env_args)
-        self.env.reset()
+        env = OffScreenRenderEnv(**env_args)
+        return env
+
+    def get_data_path(suites_root: Path):
+        bench = self.get_benchmark(self.suite)
+        demo_path: str = bench.get_task_demonstration(self.id)
+        full_path: Path = suites_root / demo_path
+        return full_path
+
+    def load_data(suites_root: Path):
+        data_path = self.get_data_path(suites_root)
+        tree = h5_to_tree(data_path)
+        return tree

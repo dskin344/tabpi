@@ -12,10 +12,10 @@ from sklearn.metrics import mean_squared_error, r2_score
 import tyro
 import wandb
 
-from tabpi.utils.util import check_download, extract, MyLibero, MyMultiTPFN
+from tabpi.utils.util import check_download, extract, MyMultiTPFN
 from tabpi.wab import Wandb
 
-suites = Path(libero.__file__).parents[0] / "datasets"
+data_dir = Path(libero.__file__).parents[0] / "datasets"
 
 
 @dataclass
@@ -26,16 +26,16 @@ class Config:
     task_id: int = 0
     steps: int = 400
     wandb: Wandb = field(default_factory=Wandb)
+    env: EnvFactory = field(default_factory=LiberoFactoy)
 
 
 def main(cfg: Config):
-    run = cfg.wandb.initialize(cfg)
-    libero = MyLibero(cfg.task_suite, cfg.task_id)
-    task_names = libero.get_task_suite().get_task_names()
+    check_download(data_dir, cfg.task_suite)
 
-    check_download(suites, cfg.task_suite)
+    raw: dict[str, Any] = cfg.env.load_data(data_dir)
+    features, actions = extract(raw)
+    env = cfg.env.build()
 
-    features, actions = extract(suites, libero.get_task_suite(), cfg.task_id)
     print(features.shape)
     print(actions.shape)
 
@@ -46,14 +46,6 @@ def main(cfg: Config):
     rng.shuffle(indices)
     features = features[indices]
     actions = actions[indices]
-
-    libero.build_env()
-
-    wandb.init(
-        project=f"{cfg.task_suite}; {task_names[cfg.task_id]} ",
-        name=f"{cfg.training * 100}%",
-        config={"training": cfg.training},
-    )
 
     n_fit = int(features.shape[0] * cfg.training)
     n_test = int(features.shape[0] * 0.10)
@@ -68,6 +60,8 @@ def main(cfg: Config):
 
     fit_time = end - start
     yh = policy.predict(x_test)
+
+    run = cfg.wandb.initialize(cfg)
 
     mse = mean_squared_error(y_test, yh)
     r2 = r2_score(y_test, yh)
@@ -84,7 +78,7 @@ def main(cfg: Config):
 
     while not done and steps < max_steps:
         steps += 1
-        env_state = libero.get_env().get_sim_state()
+        env_state = env.get_sim_state()
 
         # Track inference time
         start = time.time()
@@ -95,7 +89,7 @@ def main(cfg: Config):
         total_time += iteration_time
 
         action = np.concatenate(action, axis=0)
-        obs, env_reward, done, _info = libero.get_env().step(action)
+        obs, env_reward, done, _info = env.step(action)
 
         frames.append(obs["galleryview_image"][::-1])
 
@@ -110,7 +104,7 @@ def main(cfg: Config):
             break
 
     avg_time = total_time / steps
-    libero.get_env().close()
+    env.close()
 
     # Save video
     imageio.mimsave(f"{vid_path}{int(cfg.training * 100)}%{task_names[cfg.task_id]}All.mp4", frames, fps=30)
