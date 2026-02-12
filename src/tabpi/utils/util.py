@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
+from typing import Any, TypeAlias
 
 import h5py
 from libero.libero import benchmark
@@ -78,8 +80,8 @@ class EnvFactory:
 
 @dataclass
 class LiberoFactory(EnvFactory):
-    suite: str  # used to select group of envs
-    id: int
+    suite: str = "libero_object"  # used to select group of envs
+    id: int = 0
     max_steps: int | None = None  # TODO fix
 
     task: str = field(init=False)  # used to search for dataset name
@@ -88,8 +90,8 @@ class LiberoFactory(EnvFactory):
         bench = self.get_benchmark(self.suite)
         self.task = bench.get_task(self.id)
 
-    def get_benchmark(suite: str) -> benchmark.Benchmark:
-        return benchmark.get_benchmark(self.suite)
+    def get_benchmark(self, suite: str) -> benchmark.Benchmark:
+        return benchmark.get_benchmark(self.suite)()
 
     def build(self) -> Env:
         bench = self.get_benchmark(self.suite)

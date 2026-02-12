@@ -12,7 +12,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import tyro
 import wandb
 
-from tabpi.utils.util import check_download, extract, MyMultiTPFN
+from tabpi.utils.util import check_download, EnvFactory, extract, LiberoFactory, MyMultiTPFN
 from tabpi.wab import Wandb
 
 data_dir = Path(libero.__file__).parents[0] / "datasets"
@@ -26,7 +26,7 @@ class Config:
     task_id: int = 0
     steps: int = 400
     wandb: Wandb = field(default_factory=Wandb)
-    env: EnvFactory = field(default_factory=LiberoFactoy)
+    env: EnvFactory = field(default_factory=LiberoFactory)
 
 
 def main(cfg: Config):
