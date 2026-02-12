@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 import time
 
 import imageio
@@ -12,6 +13,7 @@ import tyro
 import wandb
 
 from tabpi.utils.util import check_download, extract, MyLibero, MyMultiTPFN
+from tabpi.wab import Wandb
 
 suites = Path(libero.__file__).parents[0] / "datasets"
 
@@ -23,9 +25,11 @@ class Config:
 
     task_id: int = 0
     steps: int = 400
+    wandb: Wandb = field(default_factory=Wandb)
 
 
 def main(cfg: Config):
+    run = cfg.wandb.initialize(cfg)
     libero = MyLibero(cfg.task_suite, cfg.task_id)
     task_names = libero.get_task_suite().get_task_names()
 
@@ -112,7 +116,7 @@ def main(cfg: Config):
     imageio.mimsave(f"{vid_path}{int(cfg.training * 100)}%{task_names[cfg.task_id]}All.mp4", frames, fps=30)
     print(f"{vid_path}{int(cfg.training * 100)}%{task_names[cfg.task_id]}All.mp4 saved")
 
-    wandb.log(
+    cfg.wandb.log(
         {
             "Fit Time": fit_time,
             "MSE": mse,
