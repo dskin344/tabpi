@@ -23,8 +23,10 @@ def check_download(suites, task_suite_name):
         for index, name in enumerate(t_names):
             print(index, ": ", name)
     else:
-        print("Task suite datasets not found. Downloading now")
-        libero_dataset_download(datasets=task_suite_name, use_huggingface=True)
+        print(f"{task_suite_name} datasets not found. Downloading now")
+        libero_dataset_download(datasets=task_suite_name, 
+                                download_dir = suites, 
+                                use_huggingface=True)
 
 
 def h5_to_tree(path: str):
