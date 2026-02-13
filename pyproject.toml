@@ -21,8 +21,9 @@ dependencies = [
     "numpy==2.3.5",
     "rich>=14.2.0",
     "robosuite>=1.4.0",
-    "scikit-learn>=1.7.2",
+    "scikit-learn>=1.6.1",
     "tabpfn>=6.2.0",
+    "tabpfn-extensions",
     "torch>=2.9.1",
     "torchvision>=0.24.1",
     "tqdm>=4.67.1",
@@ -46,3 +47,6 @@ markers = [
     "multinode: multinode tests",
 ]
 addopts = "-q --maxfail=1 --disable-warnings"
+
+[tool.uv.sources]
+tabpfn-extensions = { git = "https://github.com/PriorLabs/tabpfn-extensions.git", rev = "c019ef6ae70d4dddd19d414e425cfdd510d3993c" }
