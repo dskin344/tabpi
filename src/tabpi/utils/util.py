@@ -7,6 +7,7 @@ from typing import Any, TypeAlias
 
 import h5py
 from libero.libero import benchmark
+from libero.libero.utils.download_utils import libero_dataset_download
 from libero.libero.envs import OffScreenRenderEnv
 from libero.libero.envs.venv import SubprocVectorEnv
 import numpy as np
@@ -119,13 +120,13 @@ class LiberoFactory(EnvFactory):
         env = OffScreenRenderEnv(**env_args)
         return env
 
-    def get_data_path(suites_root: Path):
+    def get_data_path(self, suites_root: Path):
         bench = self.get_benchmark(self.suite)
         demo_path: str = bench.get_task_demonstration(self.id)
         full_path: Path = suites_root / demo_path
         return full_path
 
-    def load_data(suites_root: Path):
+    def load_data(self, suites_root: Path):
         data_path = self.get_data_path(suites_root)
         tree = h5_to_tree(data_path)
         return tree
