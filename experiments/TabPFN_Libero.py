@@ -14,22 +14,24 @@ import wandb
 
 from tabpi.utils.util import check_download, EnvFactory, extract, LiberoFactory, MyMultiTPFN
 from tabpi.wab import Wandb
+from tabpfn_extensions.multioutput import TabPFNMultiOutputRegressor
 
 data_dir = Path(libero.__file__).parents[0] / "datasets"
 
 
 @dataclass
 class Config:
-    task_suite: str
-    training: float
+    task_suite: str = "libero_object"
+    training: float = 0.10
 
     task_id: int = 0
-    steps: int = 400
+    steps: int = 10
     wandb: Wandb = field(default_factory=Wandb)
     env: EnvFactory = field(default_factory=LiberoFactory)
 
 
 def main(cfg: Config):
+    print(data_dir)
     check_download(data_dir, cfg.task_suite)
 
     raw: dict[str, Any] = cfg.env.load_data(data_dir)
@@ -52,17 +54,22 @@ def main(cfg: Config):
     n_test = int(features.shape[0] * 0.10)
     x_fit, x_test = features[:n_fit], features[n_test:]
     y_fit, y_test = actions[:n_fit], actions[n_test:]
+    print("Globally Shuffled")
 
+    regressor = TabPFNMultiOutputRegressor(n_estimators=7)
     policy = MyMultiTPFN(dim=7)
 
+    print(f"Fitting on {cfg.training*100}%")
     start = time.time()
-    policy.fit(x_fit, y_fit)
+    regressor.fit(x_fit, y_fit)
     end = time.time()
 
     fit_time = end - start
-    yh = policy.predict(x_test)
+    print("Predicting on last 10%")
+    yh = regressor.predict(x_test)
 
-    run = cfg.wandb.initialize(cfg)
+    print("Initializing Wandb")
+    #run = cfg.wandb.initialize(cfg)
 
     mse = mean_squared_error(y_test, yh)
     r2 = r2_score(y_test, yh)
@@ -79,17 +86,19 @@ def main(cfg: Config):
 
     while not done and steps < max_steps:
         steps += 1
-        env_state = env.get_sim_state()
+        env_states_array = env.get_sim_state()
+        print(f"Type: {type(env_state)}, Value: {env_state}")
 
         # Track inference time
         start = time.time()
-        action = policy.predict(env_state.reshape(1, -1))
+        for env_state in env_states_array:
+            action = regressor.predict(env_state.reshape(1, -1))
         end = time.time()
 
         iteration_time = end - start
         total_time += iteration_time
 
-        action = np.concatenate(action, axis=0)
+        print(action.shape())
         obs, env_reward, done, _info = env.step(action)
 
         frames.append(obs["galleryview_image"][::-1])
