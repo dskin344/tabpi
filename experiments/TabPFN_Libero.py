@@ -1,20 +1,22 @@
 from __future__ import annotations
+import torch
 
 from dataclasses import dataclass, field
 from pathlib import Path
 import time
 
 import imageio
-import libero
 import numpy as np
 from rich import print
 from sklearn.metrics import mean_squared_error, r2_score
+from tabpfn_extensions.multioutput import TabPFNMultiOutputRegressor
 import tyro
 import wandb
 
-from tabpi.utils.util import check_download, EnvFactory, extract, LiberoFactory, MyMultiTPFN
+import libero
+from tabpi.utils.deco import avgtime
+from tabpi.utils.util import check_download, EnvFactory, extract, LiberoFactory
 from tabpi.wab import Wandb
-from tabpfn_extensions.multioutput import TabPFNMultiOutputRegressor
 
 data_dir = Path(libero.__file__).parents[0] / "datasets"
 
@@ -36,8 +38,8 @@ def main(cfg: Config):
 
     raw: dict[str, Any] = cfg.env.load_data(data_dir)
     features, actions = extract(raw)
-    env = cfg.env.build()
-    _ = env.reset()
+    venv = cfg.env.build()
+    _ = venv.reset()
 
     print(features.shape)
     print(actions.shape)
@@ -56,25 +58,52 @@ def main(cfg: Config):
     y_fit, y_test = actions[:n_fit], actions[n_test:]
     print("Globally Shuffled")
 
-    regressor = TabPFNMultiOutputRegressor(n_estimators=7)
-    policy = MyMultiTPFN(dim=7)
+    act_dim = 7
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = TabPFNMultiOutputRegressor(
+        n_estimators=act_dim,
+        device=device,
+        # device='cuda:0',
+        fit_mode="fit_preprocessors", # cannot use batched yet
+        # n_preprocessing_jobs=act_dim*2,
+        # memory_saving_mode=False,
+        inference_precision="autocast",
+    )
 
-    print(f"Fitting on {cfg.training*100}%")
+    """
+# If multiple GPUs are detected, wrap the model in DataParallel
+        if torch.cuda.device_count() > 1:
+            # model = torch.nn.DataParallel(model)
+            model.executor_.model = torch.nn.DataParallel(model.executor_.model)
+            # model.executor_.model.to(device) # from https://github.com/PriorLabs/TabPFN/issues/215
+
+        model.executor_.model.to(device)
+    """
+
+
+    print(f"Fitting on {cfg.training * 100}%")
     start = time.time()
-    regressor.fit(x_fit, y_fit)
+    model.fit(x_fit, y_fit)
     end = time.time()
-
     fit_time = end - start
+    print(f"Done fitting in {fit_time} seconds")
+
     print("Predicting on last 10%")
-    yh = regressor.predict(x_test)
+
+    """
+    predict = avgtime(10)(model.predict)
+    yh = predict(x_test)
 
     print("Initializing Wandb")
-    #run = cfg.wandb.initialize(cfg)
+    # run = cfg.wandb.initialize(cfg)
 
     mse = mean_squared_error(y_test, yh)
     r2 = r2_score(y_test, yh)
     print("Mean Squared Error (MSE):", mse)
     print("R² Score:", r2)
+
+    quit()
+    """
 
     frames = []
     total_time = 0
@@ -86,22 +115,24 @@ def main(cfg: Config):
 
     while not done and steps < max_steps:
         steps += 1
-        env_states_array = env.get_sim_state()
-        print(f"Type: {type(env_state)}, Value: {env_state}")
+        states = np.array(venv.get_sim_state())
+        print(f"Type: {type(states)}, Value: {states.shape}")
 
         # Track inference time
         start = time.time()
-        for env_state in env_states_array:
-            action = regressor.predict(env_state.reshape(1, -1))
+        # for states in states:
+        actions = model.predict(states)
         end = time.time()
+        print(f'time for {act_dim} actions: {end - start} seconds')
 
         iteration_time = end - start
         total_time += iteration_time
 
-        print(action.shape())
-        obs, env_reward, done, _info = env.step(action)
+        print(actions.shape)
+        obs, env_reward, done, _info = venv.step(actions)
 
-        frames.append(obs["galleryview_image"][::-1])
+        # @dskinner TODO
+        # frames.append(obs["galleryview_image"][::-1])
 
         print(f"steps={steps}")
         print(f"Inference time={iteration_time}")
@@ -117,7 +148,7 @@ def main(cfg: Config):
         # sr = successes.mean()
 
     avg_time = total_time / steps
-    env.close()
+    venv.close()
 
     # Save video
     imageio.mimsave(f"{vid_path}{int(cfg.training * 100)}%{task_names[cfg.task_id]}All.mp4", frames, fps=30)
