@@ -49,6 +49,7 @@ def main(cfg: Config):
 
     cfg.env.check_download()
 
+    print(cfg.action)
     raw_data: dict[str, Any] = cfg.env.load_data()
     features, actions = extract(raw_data, cfg.selection, cfg.env.demo, cfg.action)
     if cfg.action == "next_obs/robot0_joint_pos":
