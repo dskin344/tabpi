@@ -50,7 +50,7 @@ def main(cfg: Config):
     cfg.env.check_download()
 
     raw_data: dict[str, Any] = cfg.env.load_data()
-    features, actions = extract(raw_data, cfg.selection, cfg.env.demo)
+    features, actions = extract(raw_data, cfg.selection, cfg.env.demo, cfg.action)
     if cfg.action == "obs/robot0_joint_pos":
         _, gripper_actions = extract(raw_data, cfg.selection, cfg.env.demo)
         actions = np.concatenate([actions, gripper_actions[:, -1:]], axis=1)
@@ -92,7 +92,6 @@ def main(cfg: Config):
     roll = partial(rollout, cfg.env, cfg.env.horizon, pi, venv, t, cfg.wandb, cfg.env.overfit, False, features[0])
     for i in tqdm(range(cfg.n_runs), desc="Rollouts", leave=False):
         result = roll()
-        print(result)
         cfg.wandb.log(result)
 
     times = t.get_average_times()
@@ -101,9 +100,9 @@ def main(cfg: Config):
     wandb.define_metric("times", step_metric="step")
     if cfg.env.overfit:
         wandb.define_metric("demo", step_metric="step")
+        wandb.log(demo_result)
 
     metrics = {  # "val": val,
-        **({"demo": demo_result} if cfg.env.overfit else {}),
         "times": times,
     }
 
