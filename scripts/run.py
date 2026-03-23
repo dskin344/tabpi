@@ -31,7 +31,7 @@ class Config:
     env: EnvFactory = field(default_factory=RoboSuiteFactory)
     debug: bool = False
 
-    action: Literal["absolute", "relative", "obs/robot0_joint_pos"] = "relative"
+    action: Literal["absolute", "relative", "next_obs/robot0_joint_pos"] = "relative"
     n_estimators: int = 4
 
     def __post_init__(self):
@@ -39,7 +39,7 @@ class Config:
             self.wandb.use = False
         if self.action in ("relative", "absolute"):
             self.env.controller = "OSC_POSE"
-        elif self.action == "obs/robot0_joint_pos":
+        elif self.action == "next_obs/robot0_joint_pos":
             self.env.controller = "JOINT_POSITION"
             self.env.file_name = "low_dim.hdf5"
 
@@ -51,7 +51,7 @@ def main(cfg: Config):
 
     raw_data: dict[str, Any] = cfg.env.load_data()
     features, actions = extract(raw_data, cfg.selection, cfg.env.demo, cfg.action)
-    if cfg.action == "obs/robot0_joint_pos":
+    if cfg.action == "next_obs/robot0_joint_pos":
         _, gripper_actions = extract(raw_data, cfg.selection, cfg.env.demo)
         actions = np.concatenate([actions, gripper_actions[:, -1:]], axis=1)
 
@@ -86,6 +86,7 @@ def main(cfg: Config):
     if cfg.env.overfit:
         print(f"Running demo_{cfg.env.demo}")
         demo_result = rollout(cfg.env, cfg.env.horizon, actions, venv, t, cfg.wandb, cfg.env.overfit, True, features[0])
+        wandb.log(demo_result)
 
     pi = ModelPolicy(model)
 
@@ -98,9 +99,6 @@ def main(cfg: Config):
 
     # wandb.define_metric("val", step_metric="step")
     wandb.define_metric("times", step_metric="step")
-    if cfg.env.overfit:
-        wandb.define_metric("demo", step_metric="step")
-        wandb.log(demo_result)
 
     metrics = {  # "val": val,
         "times": times,

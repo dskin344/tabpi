@@ -39,7 +39,7 @@ class RoboSuiteFactory(EnvFactory):
         controller_config = load_controller_config(default_controller=self.controller)
         if action == "absolute":
             controller_config["control_delta"] = False
-        elif action == "obs/robot0_joint_post":
+        elif action == "next_obs/robot0_joint_post":
             controller_config["input_type"] = "absolute"
 
         env_kwargs = {
