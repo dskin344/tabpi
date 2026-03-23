@@ -22,12 +22,17 @@ def h5_to_tree(path: str) -> dict[str, h5py.Group]:
 def extract(tree: dict, selection: str, demo, action_key: str = "actions") -> tuple[np.ndarray, np.ndarray]:
     demos = tree["data"]
 
+    def _get(d, key):
+        for part in key.split("/"):
+            d = d[part]
+        return d
+
     if demo is None:
-        sa_by_demo = {k: (d["states"], d[action_key]) for k, d in demos.items()}
+        sa_by_demo = {k: (d["states"], _get(d, action_key)) for k, d in demos.items()}
 
     elif isinstance(demo, int):
         key = f"demo_{demo}"
-        sa_by_demo = {key: (demos[key]["states"], demos[key][action_key])}
+        sa_by_demo = {key: (demos[key]["states"], _get(demos[key], action_key))}
 
     keys = sa_by_demo.keys()
 
