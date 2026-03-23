@@ -38,8 +38,10 @@ class RoboSuiteFactory(EnvFactory):
     def build(self, action):
         controller_config = load_controller_config(default_controller=self.controller)
         if action == "absolute":
+            print("Using absolute OSC space")
             controller_config["control_delta"] = False
         elif action == "next_obs/robot0_joint_pos":
+            print("Using absolute joint space")
             controller_config["input_type"] = "absolute"
 
         env_kwargs = {
