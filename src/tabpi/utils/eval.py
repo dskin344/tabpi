@@ -8,9 +8,9 @@ import numpy as np
 from rich import print
 from sklearn.metrics import mean_squared_error, r2_score
 from tqdm import tqdm
-import wandb
 
 from tabpi.envs.env import EnvFactory
+import wandb
 
 
 def val_metrics(model: Any, x_test: np.ndarray, y_test: np.ndarray) -> dict[str, float]:
@@ -50,7 +50,7 @@ def rollout(
         states = np.array(env.get_state())
 
         with timer("fwd"):
-            actions = policy(states) if not isinstance(policy, np.ndarray) else np.stack([policy[i]] * env.n_envs)
+            actions = policy(states) if not isinstance(policy, np.ndarray) else np.stack([policy[i]])  # * env.n_envs)
         with timer(env_name):
             obs, reward, done, _info = env.step(actions)
 
@@ -76,7 +76,7 @@ def rollout(
         desc = f"Step: {len(frames)}/{max_steps} SR: {success}"
         bar.set_description(desc)
 
-        if success == 1:  # dones.all():
+        if success == 1 or (demo and i == (policy.shape[0] - 1)):  # dones.all():
             bar.write("Task Completed!")
             break
 

@@ -35,9 +35,12 @@ class RoboSuiteFactory(EnvFactory):
         if self.overfit and self.demo is None:
             self.demo = 0
 
-    def build(self):
+    def build(self, action):
         controller_config = load_controller_config(default_controller=self.controller)
-        controller_config["control_delta"] = False
+        if action == "absolute":
+            controller_config["control_delta"] = False
+        elif action == "obs/robot0_joint_post":
+            controller_config["input_type"] = "absolute"
 
         env_kwargs = {
             "env_name": self.task,

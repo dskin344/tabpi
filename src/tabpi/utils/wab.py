@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import TypeAlias
 
 from flax.traverse_util import flatten_dict
-import wandb
 
 import tabpi
+import wandb
 
 StrPath: TypeAlias = str | Path
 

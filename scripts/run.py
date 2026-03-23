@@ -10,7 +10,6 @@ from tabpfn_extensions.multioutput import TabPFNMultiOutputRegressor
 import torch
 from tqdm import tqdm
 import tyro
-import wandb
 
 from tabpi.envs.env import EnvFactory
 from tabpi.envs.robosuite import RoboSuiteFactory
@@ -19,6 +18,7 @@ from tabpi.utils.data import extract, shuffle
 from tabpi.utils.eval import rollout
 from tabpi.utils.timer import Timer
 from tabpi.utils.wab import Wandb
+import wandb
 
 
 @dataclass
@@ -45,7 +45,7 @@ class Config:
 
 
 def main(cfg: Config):
-    venv = cfg.env.build()
+    venv = cfg.env.build(cfg.action)
 
     cfg.env.check_download()
 
@@ -57,9 +57,9 @@ def main(cfg: Config):
 
     print(features.shape, actions.shape)
 
-    x_fit, x_test, y_fit, y_test = shuffle(cfg.fit, features, actions, None)
+    x_fit, _x_test, y_fit, _y_test = shuffle(cfg.fit, features, actions, None)
 
-    print(x_fit.shape, y_fit.shape, x_test.shape, y_test.shape)
+    print(x_fit.shape, y_fit.shape)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TabPFNMultiOutputRegressor(
@@ -100,10 +100,10 @@ def main(cfg: Config):
     # wandb.define_metric("val", step_metric="step")
     wandb.define_metric("times", step_metric="step")
     if cfg.env.overfit:
-        wandb.define_metric("demo_rollout", step_metric="step")
+        wandb.define_metric("demo", step_metric="step")
 
     metrics = {  # "val": val,
-        **({"demo_rollout": demo_result} if cfg.env.overfit else {}),
+        **({"demo": demo_result} if cfg.env.overfit else {}),
         "times": times,
     }
 
