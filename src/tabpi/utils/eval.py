@@ -38,7 +38,7 @@ def rollout(
 ) -> dict[str, Any]:
     env_name = "demo" if demo else "sim"
     if overfit:
-        print("Overfitting")
+        print("Overfit")
         env.set_init_state(init_state)
 
     frames = []
@@ -76,7 +76,7 @@ def rollout(
         desc = f"Step: {len(frames)}/{max_steps} SR: {success}"
         bar.set_description(desc)
 
-        if success == 1 or (demo and i == (policy.shape[0] - 1)):  # dones.all():
+        if success == 1:  # dones.all():
             bar.write("Task Completed!")
             break
 
